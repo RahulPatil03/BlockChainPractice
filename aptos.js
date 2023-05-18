@@ -4,14 +4,13 @@ const require = createRequire(import.meta.url);
 const { AptosChingari, AptosChingariTransactions, AptosChingariNFT, getAptosAccount } = require('aptos');
 
 export default class Aptos {
-    #chingariClient;
     #aptosChingariTransactions;
     #aptosChingariNFT;
     #feePayer;
     #coinType;
 
     constructor() {
-        this.#chingariClient = new AptosChingari(process.env.aptosConnectionURL);
+        this.chingariClient = new AptosChingari(process.env.aptosConnectionURL);
         this.#aptosChingariTransactions = new AptosChingariTransactions();
         this.#aptosChingariNFT = new AptosChingariNFT();
         this.#feePayer = this.getAptosAccountFromPrivateKey(process.env.aptosFeePayerPrivateKey);
@@ -22,17 +21,39 @@ export default class Aptos {
         return getAptosAccount({ privateKey }).toPrivateKeyObject();
     }
 
-    async rawTransactionTokenRegistration(accountAddress) {
+    isUserRegistered(address) {
+        return this.chingariClient.checkUserRegistered(address, this.#coinType);
+    }
+
+    getTokenBalance(address) {
+        return this.chingariClient.getTokenBalance(address, this.#coinType);
+    }
+
+    rawTransactionTokenRegistration(accountAddress) {
         return this.#aptosChingariTransactions.registerTokenToAddress({
-            chingariClient: this.#chingariClient,
-            accountAddress,
+            chingariClient: this.chingariClient,
             feePayer: this.#feePayer.address,
             coinType: this.#coinType,
+            accountAddress,
             memo: 'Block-Chain-Practice Gari Registration'
         });
     }
 
-    async getTransactionAuthentication(rawTransaction, senderAddress, signerPrivateKey = this.#feePayer.privateKeyHex.substring(2)) {
+    rawTransactionCoinTransfer(from, to, amount, commission, memo) {
+        return this.#aptosChingariTransactions.rawTransactionCoinTransferMultiple({
+            chingariClient: this.chingariClient,
+            feePayer: this.#feePayer.address,
+            coinType: this.#coinType,
+            from,
+            to,
+            amount,
+            commission,
+            memo,
+            count: to.length
+        });
+    }
+
+    getTransactionAuthentication(rawTransaction, senderAddress, signerPrivateKey = this.#feePayer.privateKeyHex.substring(2)) {
         return this.#aptosChingariTransactions.getTransactionAuthenticationFromSigners(
             rawTransaction,
             [senderAddress],
@@ -40,8 +61,8 @@ export default class Aptos {
         );
     }
 
-    async submitMultiAgentTransaction(rawTx, payerAuth, senderAccount, senderAuth) {
-        return this.#chingariClient.createMultiAgentTXAndSubmit(
+    submitMultiAgentTransaction(rawTx, payerAuth, senderAccount, senderAuth) {
+        return this.chingariClient.createMultiAgentTXAndSubmit(
             rawTx,
             payerAuth,
             senderAccount,

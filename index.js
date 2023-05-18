@@ -60,10 +60,34 @@ class AptosPractice extends Aptos {
         const { hash, error, message } = await this.submitMultiAgentTransaction(rawTxnBase64, payerAuth, userAccount.address, senderAuth);
         console.log(61, hash, error, message);
     }
+
+    async transferGari(to, amount) {
+        const fromAccount = this.getAptosAccountFromPrivateKey(process.env.aptosUserPrivateKey);
+
+        const isFromRegistered = await this.isUserRegistered(fromAccount.address);
+        const isToRegistered = await this.isUserRegistered(to);
+
+        if (!isFromRegistered || !isToRegistered)
+            throw new Error(
+                !isFromRegistered
+                    ? 'fromUser is not registered with Gari'
+                    : 'toUser is not registered with Gari'
+            );
+
+        const tokenBalance = await this.getTokenBalance(fromAccount.address);
+        if (tokenBalance < amount) throw new Error('Insufficient Token Balance');
+
+        const { rawTxnBase64 } = await this.rawTransactionCoinTransfer(fromAccount.address, [to], [amount], [90000000], 'Block-Chain-Practice Gari Transfer');
+
+        const payerAuth = await this.getTransactionAuthentication(rawTxnBase64, fromAccount.address);
+        const senderAuth = await this.getTransactionAuthentication(rawTxnBase64, fromAccount.address, fromAccount.privateKeyHex.substring(2));
+
+        const { hash, error, message } = await this.submitMultiAgentTransaction(rawTxnBase64, payerAuth, fromAccount.address, senderAuth);
+        console.log(72, hash, error, message);
+    }
 }
 
 const solanaPractice = new SolanaPractice();
 const aptosPractice = new AptosPractice();
 
-// solanaPractice.transferGari();
-aptosPractice.registerWithGari();
+aptosPractice.transferGari('0x37f2b3a1e2a47cf09fe9720b3a74a44e678c64dce55f21dd492ccb03be7558e1', 100000000);
