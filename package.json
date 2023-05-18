@@ -13,6 +13,7 @@
   "dependencies": {
     "@solana/spl-token": "^0.3.7",
     "@solana/web3.js": "^1.76.0",
+    "aptos" : "git+https://npm_chingari:ATBBy8shgJxEHeDCsQPLxMUbCeg929956118@bitbucket.org/sumitghosh/web3-utilities.git#chingari-aptos",
     "dotenv": "^16.0.3"
   }
 }
