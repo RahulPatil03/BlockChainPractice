@@ -49,9 +49,21 @@ class AptosPractice extends Aptos {
     constructor() {
         super();
     }
+
+    async registerWithGari() {
+        const userAccount = this.getAptosAccountFromPrivateKey(process.env.aptosUserPrivateKey);
+        const { rawTxnBase64 } = await this.rawTransactionTokenRegistration(userAccount.address);
+
+        const payerAuth = await this.getTransactionAuthentication(rawTxnBase64, userAccount.address);
+        const senderAuth = await this.getTransactionAuthentication(rawTxnBase64, userAccount.address, userAccount.privateKeyHex.substring(2));
+
+        const { hash, error, message } = await this.submitMultiAgentTransaction(rawTxnBase64, payerAuth, userAccount.address, senderAuth);
+        console.log(61, hash, error, message);
+    }
 }
 
 const solanaPractice = new SolanaPractice();
 const aptosPractice = new AptosPractice();
 
-solanaPractice.transferGari();
+// solanaPractice.transferGari();
+aptosPractice.registerWithGari();
