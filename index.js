@@ -7,7 +7,7 @@ const aptos = new Aptos();
 const solana = new Solana();
 
 async function solanaFn() {
-    const fromAccount = solana.keypairFromSecretKey(process.env.userSecretKey);
+    const fromAccount = solana.keypairFromSecretKey(process.env.solanaUserSecretKey);
     const serializedTransaction = await serializedTransactionGariTransfer(
         fromAccount.publicKey.toString(),
         '2FeSUo4dxqiSJeH3zj2gMe2Mc4wehCYGn66Bx4tS6Cup',
@@ -24,6 +24,9 @@ solanaFn();
 async function serializedTransactionGariTransfer(fromPubkey, toPubkey, amount, memo) {
     const fromAssociatedTokenAddress = solana.getAssociatedTokenAddress(fromPubkey);
     const fromAccountInfo = await solana.connection.getAccountInfo(fromAssociatedTokenAddress);
+
+    const { value: { amount: tokenAccountBalance } } = await solana.connection.getTokenAccountBalance(fromAssociatedTokenAddress);
+    if (tokenAccountBalance < amount) throw new Error('Insufficient Token Balance');
 
     const toAssociatedTokenAddress = solana.getAssociatedTokenAddress(toPubkey);
     const toAccountInfo = await solana.connection.getAccountInfo(toAssociatedTokenAddress);

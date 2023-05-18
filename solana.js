@@ -10,7 +10,7 @@ export default class Solana {
 
     constructor() {
         this.connection = new Connection(process.env.solanaEndpoint || clusterApiUrl('devnet')); // A connection to a fullnode JSON RPC endpoint
-        this.feePayer = this.keypairFromSecretKey(process.env.feePayerSecretKey); // Payer Account
+        this.feePayer = this.keypairFromSecretKey(process.env.solanaFeePayerSecretKey); // Payer Account
         this.#mint = new PublicKey('7gjQaUHVdP8m7BvrFWyPkM7L3H9p4umwm3F56q1qyLk1'); // Go Xo Yo 1 Token Mint Address
         this.#tokenProgramId = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') // Token Program Address
         this.#associatedTokenProgramId = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'); // Associated Token Program Address
