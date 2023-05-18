@@ -1,34 +1,34 @@
-import bs58 from 'bs58';
+import dotenv from 'dotenv';
 import Aptos from './aptos.js';
 import Solana from './solana.js';
 
+dotenv.config();
 const aptos = new Aptos();
 const solana = new Solana();
 
-function getAllPropertiesOfClass(classParam) {
-    return [...Object.getOwnPropertyNames(classParam), ...Object.getOwnPropertyNames(classParam.prototype)];
+async function transferGariOnSolana() {
+    const fromAccount = solana.keypairFromSecretKey(process.env.secretKey1);
+    const toAccount = solana.keypairFromSecretKey(process.env.secretKey2);
+
+    console.log(13, fromAccount.publicKey.toString());
+    console.log(14, toAccount.publicKey.toString());
+
+    const fromAssociatedTokenAddress = solana.getAssociatedTokenAddress(fromAccount.publicKey);
+    const fromAccountInfo = await solana.connection.getAccountInfo(fromAssociatedTokenAddress);
+
+    const toAssociatedTokenAddress = solana.getAssociatedTokenAddress(toAccount.publicKey);
+    const toAccountInfo = await solana.connection.getAccountInfo(toAssociatedTokenAddress);
+
+    const { blockhash } = await solana.connection.getLatestBlockhash();
+    const transaction = solana.newTransaction(blockhash);
+
+    if (!fromAccountInfo) transaction.add(solana.createAssociatedTokenAccountInstruction(fromAssociatedTokenAddress, fromAccount.publicKey));
+    if (!toAccountInfo) transaction.add(solana.createAssociatedTokenAccountInstruction(toAssociatedTokenAddress, toAccount.publicKey));
+    transaction.add(solana.transferTokensInstruction(fromAssociatedTokenAddress, toAssociatedTokenAddress, fromAccount.publicKey, 100000000));
+    transaction.add(solana.memoInstruction('Block-Chain-Practice Gari Transfer Test'));
+
+    const transactionSignature = await solana.sendAndConfirmTransaction(transaction, fromAccount);
+    console.log(31, transactionSignature);
 }
 
-function getDecodedPrivateKey(privateKey) {
-    return Uint8Array.from(bs58.decode(privateKey));
-}
-
-async function solTransfer() {
-    // const fromKeypair = solana.generateKeypair();
-    const fromKeypair = solana.getKeypairFromSecretKey(getDecodedPrivateKey('5Gwv1vC7z375WLtpZCQb4V3kuKR37WwhFnAyBbyDJ3riKxZWoqs5uVC2bMcxUcNbFdFBUdBoSpf544U3szmRydvc'));
-    const toKeypair = solana.generateKeypair();
-    
-    // const airdropSignature = await solana.requestAirdrop(
-    //     fromKeypair.publicKey,
-    //     10000000000,
-    // );
-    // const confirmedTransaction = await solana.confirmTransaction(airdropSignature);
-    
-    const transaction = solana.getNewTransaction();
-
-    transaction.add(solana.getTransferInstruction(fromKeypair.publicKey, toKeypair.publicKey, 1000000000));
-    const response = await solana.sendTransaction(solana.connection, transaction, fromKeypair);
-    console.log(response);
-}
-
-solTransfer();
+transferGariOnSolana();

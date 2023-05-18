@@ -1,5 +1,5 @@
 {
-  "name": "blockchainpractice",
+  "name": "block-chain-practice",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,10 +7,12 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Rahul Patil",
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@solana/web3.js": "^1.76.0"
+    "@solana/spl-token": "^0.3.7",
+    "@solana/web3.js": "^1.76.0",
+    "dotenv": "^16.0.3"
   }
 }

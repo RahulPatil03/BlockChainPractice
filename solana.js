@@ -1,29 +1,47 @@
-import { Connection, Keypair, SystemProgram, Transaction, clusterApiUrl, sendAndConfirmTransaction, PublicKey } from '@solana/web3.js';
+import { createAssociatedTokenAccountInstruction, createTransferInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
+import { Connection, Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction, clusterApiUrl, sendAndConfirmTransaction } from '@solana/web3.js';
+import bs58 from 'bs58';
 
 export default class Solana {
-    connection = new Connection(clusterApiUrl('devnet')); // A connection to a fullnode JSON RPC endpoint
+    #feePayer;
+    #mint;
+    #tokenProgramId;
+    #associatedTokenProgramId;
+    #memoProgramId;
 
-    getKeypairFromSecretKey(secretKey) {
-        return Keypair.fromSecretKey(secretKey); // Create a keypair from a raw secret key byte array
+    constructor() {
+        this.connection = new Connection(process.env.solanaEndpoint || clusterApiUrl('devnet')); // A connection to a fullnode JSON RPC endpoint
+        this.#feePayer = this.keypairFromSecretKey(process.env.feePayerSecretKey); // Payer Account
+        this.#mint = new PublicKey('7gjQaUHVdP8m7BvrFWyPkM7L3H9p4umwm3F56q1qyLk1'); // Go Xo Yo 1 Token Mint Address
+        this.#tokenProgramId = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') // Token Program Address
+        this.#associatedTokenProgramId = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'); // Associated Token Program Address
+        this.#memoProgramId = new PublicKey('Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo'); //Memo Program Address
     }
 
-    generateKeypair() {
-        return Keypair.generate(); // Generate a new random keypair
+    keypairFromSecretKey(secretKey) {
+        return Keypair.fromSecretKey( // Create a keypair from a raw secret key byte array
+            Uint8Array.from(bs58.decode(secretKey)) // secret key byte array
+        );
     }
 
-    requestAirdrop(to, lamports) {
-        return this.connection.requestAirdrop(to, lamports); // Request an allocation of lamports to the specified address
+    getAssociatedTokenAddress(owner) {
+        return getAssociatedTokenAddressSync( // Get the address of the associated token account for a given mint and owner
+            this.#mint, // Token mint account
+            owner, // Owner of the new account
+            false, // Allow the owner account to be a PDA (Program Derived Address)
+            this.#tokenProgramId, // SPL Token program account
+            this.#associatedTokenProgramId // SPL Associated Token program account
+        );
     }
 
-    confirmTransaction(signature) {
-        return this.connection.confirmTransaction({ signature });
+    newTransaction(blockhash) {
+        return new Transaction({ // Get New Transaction Object
+            feePayer: this.#feePayer.publicKey, // The transaction fee payer
+            blockhash, // A recent blockhash
+        });
     }
 
-    getNewTransaction() {
-        return new Transaction(); // Transaction class
-    }
-
-    getTransferInstruction(fromPubkey, toPubkey, lamports) {
+    transferLamportsInstruction(fromPubkey, toPubkey, lamports) {
         return SystemProgram.transfer({ // Generate a transaction instruction that transfers lamports from one account to another
             fromPubkey, // Account that will transfer lamports
             toPubkey, // Account that will receive transferred lamports
@@ -31,7 +49,37 @@ export default class Solana {
         });
     }
 
-    sendTransaction(connection, transaction, keypair) {
-        return sendAndConfirmTransaction(connection, transaction, [keypair]); // Sign, send and confirm a transaction
+    createAssociatedTokenAccountInstruction(associatedToken, owner) {
+        return createAssociatedTokenAccountInstruction( // Construct a CreateAssociatedTokenAccount instruction
+            this.#feePayer.publicKey, // Payer of the initialization fees
+            associatedToken, // New associated token account
+            owner, // Owner of the new account
+            this.#mint, // Token mint account
+            this.#tokenProgramId, // SPL Token program account
+            this.#associatedTokenProgramId // SPL Associated Token program account
+        );
+    }
+
+    transferTokensInstruction(source, destination, owner, amount) {
+        return createTransferInstruction( // Construct a Transfer instruction
+            source, // Source account
+            destination, // Destination account
+            owner, // Owner of the source account
+            amount, // Number of tokens to transfer
+            undefined, // Signing accounts if `owner` is a multisig
+            this.#tokenProgramId // SPL Token program account
+        );
+    }
+
+    memoInstruction(data) {
+        return new TransactionInstruction({ // Returns a new Transaction Instruction
+            keys: [], // Public keys to include in this transaction Boolean represents whether this pubkey needs to sign the transaction
+            data: Buffer.from(data), // Program input
+            programId: this.#memoProgramId // Program Id to execute
+        });
+    }
+
+    sendAndConfirmTransaction(transaction, signer) {
+        return sendAndConfirmTransaction(this.connection, transaction, [this.#feePayer, signer]); // Sign, send and confirm a transaction
     }
 }
