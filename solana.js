@@ -3,7 +3,6 @@ import { Connection, Keypair, PublicKey, SystemProgram, Transaction, Transaction
 import bs58 from 'bs58';
 
 export default class Solana {
-    #feePayer;
     #mint;
     #tokenProgramId;
     #associatedTokenProgramId;
@@ -11,7 +10,7 @@ export default class Solana {
 
     constructor() {
         this.connection = new Connection(process.env.solanaEndpoint || clusterApiUrl('devnet')); // A connection to a fullnode JSON RPC endpoint
-        this.#feePayer = this.keypairFromSecretKey(process.env.feePayerSecretKey); // Payer Account
+        this.feePayer = this.keypairFromSecretKey(process.env.feePayerSecretKey); // Payer Account
         this.#mint = new PublicKey('7gjQaUHVdP8m7BvrFWyPkM7L3H9p4umwm3F56q1qyLk1'); // Go Xo Yo 1 Token Mint Address
         this.#tokenProgramId = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') // Token Program Address
         this.#associatedTokenProgramId = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'); // Associated Token Program Address
@@ -27,33 +26,40 @@ export default class Solana {
     getAssociatedTokenAddress(owner) {
         return getAssociatedTokenAddressSync( // Get the address of the associated token account for a given mint and owner
             this.#mint, // Token mint account
-            owner, // Owner of the new account
+            new PublicKey(owner), // Owner of the new account
             false, // Allow the owner account to be a PDA (Program Derived Address)
             this.#tokenProgramId, // SPL Token program account
             this.#associatedTokenProgramId // SPL Associated Token program account
         );
     }
 
-    newTransaction(blockhash) {
+    newTransaction(blockhash, lastValidBlockHeight) {
         return new Transaction({ // Get New Transaction Object
-            feePayer: this.#feePayer.publicKey, // The transaction fee payer
+            feePayer: this.feePayer.publicKey, // The transaction fee payer
             blockhash, // A recent blockhash
+            lastValidBlockHeight // the last block chain can advance to before tx is exportd expired
         });
+    }
+
+    deserializeTransaction(serializedTransaction) {
+        return Transaction.from( // Parse a wire transaction into a Transaction object
+            Buffer.from(serializedTransaction, 'base64') // Creates a new Buffer containing the given JavaScript string {str}
+        );
     }
 
     transferLamportsInstruction(fromPubkey, toPubkey, lamports) {
         return SystemProgram.transfer({ // Generate a transaction instruction that transfers lamports from one account to another
-            fromPubkey, // Account that will transfer lamports
-            toPubkey, // Account that will receive transferred lamports
+            fromPubkey: new PublicKey(fromPubkey), // Account that will transfer lamports
+            toPubkey: new PublicKey(toPubkey), // Account that will receive transferred lamports
             lamports, // Amount of lamports to transfer
         });
     }
 
     createAssociatedTokenAccountInstruction(associatedToken, owner) {
         return createAssociatedTokenAccountInstruction( // Construct a CreateAssociatedTokenAccount instruction
-            this.#feePayer.publicKey, // Payer of the initialization fees
+            this.feePayer.publicKey, // Payer of the initialization fees
             associatedToken, // New associated token account
-            owner, // Owner of the new account
+            new PublicKey(owner), // Owner of the new account
             this.#mint, // Token mint account
             this.#tokenProgramId, // SPL Token program account
             this.#associatedTokenProgramId // SPL Associated Token program account
@@ -64,7 +70,7 @@ export default class Solana {
         return createTransferInstruction( // Construct a Transfer instruction
             source, // Source account
             destination, // Destination account
-            owner, // Owner of the source account
+            new PublicKey(owner), // Owner of the source account
             amount, // Number of tokens to transfer
             undefined, // Signing accounts if `owner` is a multisig
             this.#tokenProgramId // SPL Token program account
@@ -80,6 +86,6 @@ export default class Solana {
     }
 
     sendAndConfirmTransaction(transaction, signer) {
-        return sendAndConfirmTransaction(this.connection, transaction, [this.#feePayer, signer]); // Sign, send and confirm a transaction
+        return sendAndConfirmTransaction(this.connection, transaction, [this.feePayer, signer]); // Sign, send and confirm a transaction
     }
 }

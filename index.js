@@ -6,29 +6,36 @@ dotenv.config();
 const aptos = new Aptos();
 const solana = new Solana();
 
-async function transferGariOnSolana() {
-    const fromAccount = solana.keypairFromSecretKey(process.env.secretKey1);
-    const toAccount = solana.keypairFromSecretKey(process.env.secretKey2);
-
-    console.log(13, fromAccount.publicKey.toString());
-    console.log(14, toAccount.publicKey.toString());
-
-    const fromAssociatedTokenAddress = solana.getAssociatedTokenAddress(fromAccount.publicKey);
-    const fromAccountInfo = await solana.connection.getAccountInfo(fromAssociatedTokenAddress);
-
-    const toAssociatedTokenAddress = solana.getAssociatedTokenAddress(toAccount.publicKey);
-    const toAccountInfo = await solana.connection.getAccountInfo(toAssociatedTokenAddress);
-
-    const { blockhash } = await solana.connection.getLatestBlockhash();
-    const transaction = solana.newTransaction(blockhash);
-
-    if (!fromAccountInfo) transaction.add(solana.createAssociatedTokenAccountInstruction(fromAssociatedTokenAddress, fromAccount.publicKey));
-    if (!toAccountInfo) transaction.add(solana.createAssociatedTokenAccountInstruction(toAssociatedTokenAddress, toAccount.publicKey));
-    transaction.add(solana.transferTokensInstruction(fromAssociatedTokenAddress, toAssociatedTokenAddress, fromAccount.publicKey, 100000000));
-    transaction.add(solana.memoInstruction('Block-Chain-Practice Gari Transfer Test'));
-
-    const transactionSignature = await solana.sendAndConfirmTransaction(transaction, fromAccount);
-    console.log(31, transactionSignature);
+async function solanaFn() {
+    const fromAccount = solana.keypairFromSecretKey(process.env.userSecretKey);
+    const serializedTransaction = await serializedTransactionGariTransfer(
+        fromAccount.publicKey.toString(),
+        '2FeSUo4dxqiSJeH3zj2gMe2Mc4wehCYGn66Bx4tS6Cup',
+        100000000,
+        'Block-Chain-Practice Gari Transfer Test'
+    );
+    const deserializedTransaction = solana.deserializeTransaction(serializedTransaction);
+    const transactionSignature = await solana.sendAndConfirmTransaction(deserializedTransaction, fromAccount);
+    console.log(19, transactionSignature);
 }
 
-transferGariOnSolana();
+solanaFn();
+
+async function serializedTransactionGariTransfer(fromPubkey, toPubkey, amount, memo) {
+    const fromAssociatedTokenAddress = solana.getAssociatedTokenAddress(fromPubkey);
+    const fromAccountInfo = await solana.connection.getAccountInfo(fromAssociatedTokenAddress);
+
+    const toAssociatedTokenAddress = solana.getAssociatedTokenAddress(toPubkey);
+    const toAccountInfo = await solana.connection.getAccountInfo(toAssociatedTokenAddress);
+
+    const { blockhash, lastValidBlockHeight } = await solana.connection.getLatestBlockhash();
+    const transaction = solana.newTransaction(blockhash, lastValidBlockHeight);
+
+    if (!fromAccountInfo) transaction.add(solana.createAssociatedTokenAccountInstruction(fromAssociatedTokenAddress, fromPubkey));
+    if (!toAccountInfo) transaction.add(solana.createAssociatedTokenAccountInstruction(toAssociatedTokenAddress, toPubkey));
+    transaction.add(solana.transferTokensInstruction(fromAssociatedTokenAddress, toAssociatedTokenAddress, fromPubkey, amount));
+    transaction.add(solana.memoInstruction(memo));
+
+    transaction.sign(solana.feePayer);
+    return transaction.serialize({ requireAllSignatures: false }).toString('base64');
+}
