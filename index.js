@@ -46,8 +46,19 @@ class SolanaPractice extends Solana {
 }
 
 class AptosPractice extends Aptos {
+    #powersOf256 = [1, 256];
+    
     constructor() {
         super();
+        for (let i = 2; i < 8; i++) this.#powersOf256[i] = this.#powersOf256[i - 1] * 256;
+    }
+
+    #getHexFromUint8Array(uint8Array) {
+        return uint8Array.reduce((previousValue, currentValue) => previousValue + currentValue.toString(16).padStart(2, 0), '0x');
+    }
+
+    #getNumberFromUint8Array(uint8Array) {
+        return uint8Array.reduce((previousValue, currentValue, currentIndex) => previousValue + currentValue * this.#powersOf256[currentIndex], 0);
     }
 
     async registerWithGari() {
@@ -85,9 +96,35 @@ class AptosPractice extends Aptos {
         const { hash, error, message } = await this.submitMultiAgentTransaction(rawTxnBase64, payerAuth, fromAccount.address, senderAuth);
         console.log(72, hash, error, message);
     }
+
+    async mintBadge() {
+        const userAccount = this.getAptosAccountFromPrivateKey(process.env.aptosUserPrivateKey);
+        const { rawTxnBase64 } = await this.rawTransactionMintBadge(userAccount.address);
+
+        const payerAuth = await this.getTransactionAuthentication(rawTxnBase64, userAccount.address);
+        const senderAuth = await this.getTransactionAuthentication(rawTxnBase64, userAccount.address, userAccount.privateKeyHex.substring(2));
+
+        const { hash, error, message } = await this.submitMultiAgentTransaction(rawTxnBase64, payerAuth, userAccount.address, senderAuth);
+        console.log(97, hash, error, message);
+    }
+
+    async deserializeMintBadgeTransaction() {
+        const userAccount = this.getAptosAccountFromPrivateKey(process.env.aptosUserPrivateKey);
+        const { rawTxnBase64 } = await this.rawTransactionMintBadge(userAccount.address);
+
+        const multiAgentRawTransaction = this.getDeserializedTransaction(rawTxnBase64);
+        const userAddress = this.#getHexFromUint8Array(multiAgentRawTransaction.secondary_signer_addresses[0].address);
+
+        const [tokenNameArg, priceArg, memoArg] = multiAgentRawTransaction.raw_txn.payload.value.args;
+        const tokenName = String.fromCharCode(...tokenNameArg.slice(1));
+        const price = this.#getNumberFromUint8Array(priceArg);
+        const memo = String.fromCharCode(...memoArg.slice(1));
+
+        console.log(122, { userAddress, tokenName, price, memo });
+    }
 }
 
 const solanaPractice = new SolanaPractice();
 const aptosPractice = new AptosPractice();
 
-aptosPractice.transferGari('0x37f2b3a1e2a47cf09fe9720b3a74a44e678c64dce55f21dd492ccb03be7558e1', 100000000);
+aptosPractice.deserializeMintBadgeTransaction();
