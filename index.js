@@ -27,7 +27,7 @@ class SolanaPractice extends Solana {
         transaction.add(this.transferTokensInstruction(fromAssociatedTokenAddress, toAssociatedTokenAddress, fromPubkey, amount));
         transaction.add(this.memoInstruction(memo));
 
-        transaction.sign(this.feePayer);
+        transaction.sign(this.admin);
         return transaction.serialize({ requireAllSignatures: false }).toString('base64');
     }
 
@@ -55,6 +55,11 @@ class AptosPractice extends Aptos {
 
     #getNumberFromUint8Array(uint8Array) {
         return uint8Array.reduce((previousValue, currentValue, currentIndex) => previousValue + currentValue * this.#powersOf256[currentIndex], 0);
+    }
+
+    async createNewAccount() {
+        const newAccount = await this.getNewAccount();
+        console.log(62, newAccount);
     }
 
     async registerWithGari() {
@@ -119,7 +124,7 @@ class AptosPractice extends Aptos {
         console.log(119, { userAddress, tokenName, price, memo });
     }
 
-    async upgradeBadge(){
+    async upgradeBadge() {
         const userAccount = this.getAptosAccountFromPrivateKey(process.env.aptosUserPrivateKey);
         const { rawTxnBase64 } = await this.rawTransactionUpgradeBadge(userAccount.address);
 
@@ -141,4 +146,4 @@ class AptosPractice extends Aptos {
 const solanaPractice = new SolanaPractice();
 const aptosPractice = new AptosPractice();
 
-aptosPractice.upgradeBadge();
+aptosPractice.createNewAccount();

@@ -10,7 +10,7 @@ export default class Solana {
 
     constructor() {
         this.connection = new Connection(process.env.solanaEndpoint || clusterApiUrl('devnet')); // A connection to a fullnode JSON RPC endpoint
-        this.feePayer = this.keypairFromSecretKey(process.env.solanaFeePayerSecretKey); // Payer Account
+        this.admin = this.keypairFromSecretKey(process.env.solanaAdminSecretKey); // Payer Account
         this.#mint = new PublicKey('7gjQaUHVdP8m7BvrFWyPkM7L3H9p4umwm3F56q1qyLk1'); // Go Xo Yo 1 Token Mint Address
         this.#tokenProgramId = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') // Token Program Address
         this.#associatedTokenProgramId = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'); // Associated Token Program Address
@@ -35,7 +35,7 @@ export default class Solana {
 
     newTransaction(blockhash, lastValidBlockHeight) {
         return new Transaction({ // Get New Transaction Object
-            feePayer: this.feePayer.publicKey, // The transaction fee payer
+            feePayer: this.admin.publicKey, // The transaction fee payer
             blockhash, // A recent blockhash
             lastValidBlockHeight // the last block chain can advance to before tx is exportd expired
         });
@@ -57,7 +57,7 @@ export default class Solana {
 
     createAssociatedTokenAccountInstruction(associatedToken, owner) {
         return createAssociatedTokenAccountInstruction( // Construct a CreateAssociatedTokenAccount instruction
-            this.feePayer.publicKey, // Payer of the initialization fees
+            this.admin.publicKey, // Payer of the initialization fees
             associatedToken, // New associated token account
             new PublicKey(owner), // Owner of the new account
             this.#mint, // Token mint account
@@ -86,6 +86,6 @@ export default class Solana {
     }
 
     sendAndConfirmTransaction(transaction, signer) {
-        return sendAndConfirmTransaction(this.connection, transaction, [this.feePayer, signer]); // Sign, send and confirm a transaction
+        return sendAndConfirmTransaction(this.connection, transaction, [this.admin, signer]); // Sign, send and confirm a transaction
     }
 }

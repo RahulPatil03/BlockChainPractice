@@ -7,11 +7,11 @@ export default class Aptos {
     #chingariClient;
     #aptosChingariTransactions;
     #aptosChingariNFT;
-    #feePayer;
+    #admin;
     #coinType;
 
     constructor() {
-        this.#feePayer = this.getAptosAccountFromPrivateKey(process.env.aptosFeePayerPrivateKey);
+        this.#admin = this.getAptosAccountFromPrivateKey(process.env.aptosAdminPrivateKey);
         this.#coinType = '0xe60c54467e4c094cee951fde4a018ce1504f3b0f09ed86e6c8d9811771c6b1f0::coin::T';
         this.#chingariClient = new AptosChingari(process.env.aptosConnectionURL);
         this.#aptosChingariTransactions = new AptosChingariTransactions();
@@ -20,6 +20,14 @@ export default class Aptos {
 
     getAptosAccountFromPrivateKey(privateKey) {
         return getAptosAccount({ privateKey }).toPrivateKeyObject();
+    }
+
+    getNewAccount() {
+        return this.#aptosChingariTransactions.createAndSendNewAccountTransaction({
+            chingariClient: this.#chingariClient,
+            senderPrivateKey: process.env.aptosAdminPrivateKey,
+            simulation: true
+        })
     }
 
     isUserRegistered(address) {
@@ -33,7 +41,7 @@ export default class Aptos {
     rawTransactionTokenRegistration(accountAddress) {
         return this.#aptosChingariTransactions.registerTokenToAddress({
             chingariClient: this.#chingariClient,
-            feePayer: this.#feePayer.address,
+            feePayer: this.#admin.address,
             coinType: this.#coinType,
             accountAddress,
             memo: 'Block-Chain-Practice Gari Registration'
@@ -43,7 +51,7 @@ export default class Aptos {
     rawTransactionCoinTransfer(from, to, amount, commission, memo) {
         return this.#aptosChingariTransactions.rawTransactionCoinTransferMultiple({
             chingariClient: this.#chingariClient,
-            feePayer: this.#feePayer.address,
+            feePayer: this.#admin.address,
             coinType: this.#coinType,
             from,
             to,
@@ -51,13 +59,14 @@ export default class Aptos {
             commission,
             memo,
             count: to.length,
+            ignoreUnregistered: false,
         });
     }
 
     rawTransactionMintBadge(userAddress) {
         return this.#aptosChingariNFT.mintBadge({
             chingariClient: this.#chingariClient,
-            adminAddress: this.#feePayer.address,
+            adminAddress: this.#admin.address,
             coinType: this.#coinType,
             tokenName: 'Iron Creator',
             userAddress,
@@ -69,7 +78,7 @@ export default class Aptos {
     rawTransactionUpgradeBadge(userAddress) {
         return this.#aptosChingariNFT.upgradeBadge({
             chingariClient: this.#chingariClient,
-            adminAddress: this.#feePayer.address,
+            adminAddress: this.#admin.address,
             coinType: this.#coinType,
             oldBadgeName: 'Iron Creator',
             oldBadgePropertyVersion: 1,
@@ -83,7 +92,7 @@ export default class Aptos {
         })
     }
 
-    getTransactionAuthentication(rawTransaction, senderAddress, signerPrivateKey = this.#feePayer.privateKeyHex.substring(2)) {
+    getTransactionAuthentication(rawTransaction, senderAddress, signerPrivateKey = process.env.aptosAdminPrivateKey) {
         return this.#aptosChingariTransactions.getTransactionAuthenticationFromSigners(
             rawTransaction,
             [senderAddress],
