@@ -59,10 +59,27 @@ export default class Aptos {
             chingariClient: this.#chingariClient,
             adminAddress: this.#feePayer.address,
             coinType: this.#coinType,
-            tokenName: 'Test Badge 1',
+            tokenName: 'Iron Creator',
             userAddress,
             price: 10000000,
             memo: 'Block-Chain-Practice Mint Badge Test'
+        })
+    }
+
+    rawTransactionUpgradeBadge(userAddress) {
+        return this.#aptosChingariNFT.upgradeBadge({
+            chingariClient: this.#chingariClient,
+            adminAddress: this.#feePayer.address,
+            coinType: this.#coinType,
+            oldBadgeName: 'Iron Creator',
+            oldBadgePropertyVersion: 1,
+            price: 10000000,
+            tokenName: 'Bronze Creator',
+            userAddress,
+            memo: 'Block-Chain-Practice Upgrade Badge Test',
+            oldBadgeCollection: 'Gari Badges',
+            oldBadgeCreatorAddress: '0x9c5947d235fca8af0ed9c90dca50196c112dac407eb19d87d9287db93d7e2d51',
+            isFree: false,
         })
     }
 
@@ -76,6 +93,10 @@ export default class Aptos {
 
     getDeserializedTransaction(multiAgentTxnBase64) {
         return deserializeMultiAgentRawTransaction({ multiAgentTxnBase64 });
+    }
+
+    getTransactionDetails(signature) {
+        return this.#chingariClient.getTransactionDetail(signature);
     }
 
     submitMultiAgentTransaction(rawTx, payerAuth, senderAccount, senderAuth) {
