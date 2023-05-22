@@ -106,7 +106,7 @@ class AptosPractice extends Aptos {
         const senderAuth = await this.getTransactionAuthentication(rawTxnBase64, userAccount.address, userAccount.privateKeyHex.substring(2));
 
         const { hash, error, message } = await this.submitMultiAgentTransaction(rawTxnBase64, payerAuth, userAccount.address, senderAuth);
-        console.log(104, hash, error, message);
+        console.log(109, hash, error, message);
     }
 
     async deserializeMintBadgeTransaction() {
@@ -146,4 +146,4 @@ class AptosPractice extends Aptos {
 const solanaPractice = new SolanaPractice();
 const aptosPractice = new AptosPractice();
 
-aptosPractice.createNewAccount();
+// aptosPractice.mintBadge();
