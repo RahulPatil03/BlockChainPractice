@@ -100,14 +100,6 @@ export default class Aptos {
         );
     }
 
-    getDeserializedTransaction(multiAgentTxnBase64) {
-        return deserializeMultiAgentRawTransaction({ multiAgentTxnBase64 });
-    }
-
-    getTransactionDetails(signature) {
-        return this.#chingariClient.getTransactionDetail(signature);
-    }
-
     submitMultiAgentTransaction(rawTx, payerAuth, senderAccount, senderAuth) {
         return this.#chingariClient.createMultiAgentTXAndSubmit(
             rawTx,
@@ -116,5 +108,17 @@ export default class Aptos {
             senderAuth,
             true
         );
+    }
+
+    getDeserializedTransaction(multiAgentTxnBase64) {
+        return deserializeMultiAgentRawTransaction({ multiAgentTxnBase64 });
+    }
+
+    getTransactionDetails(signature) {
+        return this.#chingariClient.getTransactionDetail(signature);
+    }
+
+    getCoinActivities() {
+        return this.#chingariClient.getCoinActivities(this.#coinType, 1000);
     }
 }

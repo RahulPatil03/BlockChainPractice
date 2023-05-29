@@ -14,7 +14,7 @@ export default class Solana {
         this.#mint = new PublicKey('7gjQaUHVdP8m7BvrFWyPkM7L3H9p4umwm3F56q1qyLk1'); // Go Xo Yo 1 Token Mint Address
         this.#tokenProgramId = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') // Token Program Address
         this.#associatedTokenProgramId = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'); // Associated Token Program Address
-        this.#memoProgramId = new PublicKey('Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo'); //Memo Program Address
+        this.#memoProgramId = new PublicKey('Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo'); // Memo Program Address
     }
 
     keypairFromSecretKey(secretKey) {
