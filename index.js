@@ -44,14 +44,20 @@ class SolanaPractice extends Solana {
         console.log(44, transactionSignature);
     }
 
-    async test() {
+    async signAndSerialize() {
         const userAccount = this.keypairFromSecretKey(process.env.solanaUserSecretKey);
         const gariAccount = this.keypairFromSecretKey(process.env.gariAccountPrivateKey);
 
-        const deserializedTransaction = this.deserializeTransaction('AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgADCMHudKoUWtW2hZV3TV/dGXoVeZfhoDEZOj3v95lqU9SFghcCcw9mzzM2iunCm6FNNsO7ENDpI/DyFKYSQupTEGvO4vWaeZBo2rJa5uqGQH94lvNtmOKbLG0K+uqsyqHdJ36UsgMNfiNFZ7xaQ9YSXecgq0DJT4Rmp6S71hhasbJGrF9c13AfFD+Oi3raJfGBjFOYRX9IYShtQ400SF+tOroG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqQVKU1D4XciC1hSlVnJ4iilt3x6rq9CmBniISTL07vagAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlUfqmk2iVwdw9OKRquPHRcwnJhbdroroXKNJWpY/3TwQFAwIDAAkDyAAAAAAAAAAFAwIEAAkDCgAAAAAAAAAGAA5UaXAgYXB0b3NVc2VyMgcCAQAMAgAAAICEHgAAAAAA');
+        const deserializedTransaction = this.deserializeTransaction('AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAIGwe50qhRa1baFlXdNX90ZehV5l+GgMRk6Pe/3mWpT1IXO4vWaeZBo2rJa5uqGQH94lvNtmOKbLG0K+uqsyqHdJ36UsgMNfiNFZ7xaQ9YSXecgq0DJT4Rmp6S71hhasbJGrF9c13AfFD+Oi3raJfGBjFOYRX9IYShtQ400SF+tOroG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqQVKU1D4XciC1hSlVnJ4iilt3x6rq9CmBniISTL07vagLSbjdbGAysnripvx1AS4UgTS9AK/G/Z455X511l08EYDBAMBAgAJAzDmAgAAAAAABAMBAwAJAxAnAAAAAAAABQAcVGlwIDY0NzA4ZWE0ZmI4Y2JlOWJiNjY5MDMzNw==');
 
         deserializedTransaction.partialSign(userAccount);
         console.log(54, deserializedTransaction.serialize({ verifySignatures: false }).toString('base64'));
+    }
+
+    async decodeTransaction() {
+        const rawTransaction = 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAIGps31vfjS4bHkK3PnW6jNvc5IdI92shh2C3979yhKPKo8uOHWr5dXc8JqAJhyLBVqbJWA+K9Llm7tncB3MeybIH6UsgMNfiNFZ7xaQ9YSXecgq0DJT4Rmp6S71hhasbJGrF9c13AfFD+Oi3raJfGBjFOYRX9IYShtQ400SF+tOroG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqQVKU1D4XciC1hSlVnJ4iilt3x6rq9CmBniISTL07vag+NZFXP9v4K7BIASmNaavanZBinpKykEVwJbrFjw3A3kDBAMBAgAJA+DK1AIAAAAABAMBAwAJA6AlJgAAAAAABQAcVGlwIDY0NzA4ZWE0ZmI4Y2JlOWJiNjY5MDMzNw==';
+        const decodedTransaction = this.deserializeTransaction(rawTransaction);
+        console.log(60, decodedTransaction);
     }
 }
 
@@ -188,29 +194,35 @@ class AptosPractice extends Aptos {
         console.log(137, txnDetails.signature.secondary_signer_addresses[0]);
     }
 
-    async tempHelper() {
-        const userAccountAddress = this.getAddressFromPrivateKey(process.env.aptosUserPrivateKey);
-
-        const senderAuth = await this.getTransactionAuthentication('AJxZR9I1/KivDtnJDcpQGWwRLaxAfrGdh9kofbk9fi1RYQIAAAAAAAACWeh+alNFEiCl8VRqkp6QILHHV+iptuw6dmN94AX5s3EHcGF5ZXJfMzB0cmFuc2Zlcl93aXRoX2ZlZV9wYXllcl9tdWx0aXBsZV93aXRoX2NvbW1pc3Npb24BB+YMVEZ+TAlM7pUf3koBjOFQTzsPCe2G5sjZgRdxxrHwBGNvaW4BVAAGCAEAAAAAAAAAIQGcWUfSNfyorw7ZyQ3KUBlsES2sQH6xnYfZKH25PX4tUQkByAAAAAAAAAAJAQoAAAAAAAAAAQAQD1RpcCBzb2xhbmFVc2VyMiBOAAAAAAAAZAAAAAAAAADK/G5kAAAAAAIBDPF90Ejfwq6idJpDk81KQtci1yoxL84abdaST+xOngE=', userAccountAddress, process.env.aptosUserPrivateKey);
-        console.log(185, senderAuth);
-
-        // const multiAgentRawTransaction = this.getDeserializedTransaction('AJxZR9I1/KivDtnJDcpQGWwRLaxAfrGdh9kofbk9fi1RVwIAAAAAAAACWeh+alNFEiCl8VRqkp6QILHHV+iptuw6dmN94AX5s3EHcGF5ZXJfMzB0cmFuc2Zlcl93aXRoX2ZlZV9wYXllcl9tdWx0aXBsZV93aXRoX2NvbW1pc3Npb24BB+YMVEZ+TAlM7pUf3koBjOFQTzsPCe2G5sjZgRdxxrHwBGNvaW4BVAAGCAEAAAAAAAAAIQGcWUfSNfyorw7ZyQ3KUBlsES2sQH6xnYfZKH25PX4tUQkByAAAAAAAAAAJAQoAAAAAAAAAAQAQD1RpcCBzb2xhbmFVc2VyMtAHAAAAAAAAZAAAAAAAAAB8qG1kAAAAAAIBDPF90Ejfwq6idJpDk81KQtci1yoxL84abdaST+xOngE=');
-        // const [, receiversArg, amountArg, commissionArg, , memoArg] = multiAgentRawTransaction.raw_txn.payload.value.args;
-        // console.log(189, multiAgentRawTransaction.secondary_signer_addresses[0].toHexString());
-        // console.log(190, this.#getCoinTransferArgs(receiversArg, amountArg, commissionArg));
-        // console.log(191, String.fromCharCode(...memoArg.slice(1)));
-
-        // const response = await this.getNewAccount();
-        // console.log(194, response);
+    async getSenderAuth() {
+        const fromAccountAddress = this.getAddressFromPrivateKey(process.env.aptosUserPrivateKey);
+        const senderAuth = await this.getTransactionAuthentication('AJxZR9I1/KivDtnJDcpQGWwRLaxAfrGdh9kofbk9fi1RowIAAAAAAAACWeh+alNFEiCl8VRqkp6QILHHV+iptuw6dmN94AX5s3EHcGF5ZXJfMzB0cmFuc2Zlcl93aXRoX2ZlZV9wYXllcl9tdWx0aXBsZV93aXRoX2NvbW1pc3Npb24BB+YMVEZ+TAlM7pUf3koBjOFQTzsPCe2G5sjZgRdxxrHwBGNvaW4BVAAGCAEAAAAAAAAAIQGcWUfSNfyorw7ZyQ3KUBlsES2sQH6xnYfZKH25PX4tUQkByAAAAAAAAAAJAQoAAAAAAAAAAQAQD1RpcCBzb2xhbmFVc2VyMiBOAAAAAAAAZAAAAAAAAAD3jHhkAAAAAAIBDPF90Ejfwq6idJpDk81KQtci1yoxL84abdaST+xOngE=', fromAccountAddress, process.env.aptosUserPrivateKey);
+        console.log(194, senderAuth);
     }
 
-    async testGetCoinActivities() {
-        const response = await this.getCoinActivities();
-        console.log(199, response, response.length);
+    async testGetAssociateAccount() {
+        const accountInfo = await this.chingariClient.getAccountInfo('0x9c5947d235fca8af0ed9c90dca50196c112dac407eb19d87d9287db93d7e2d51');
+        console.log(205, accountInfo);
+        console.log(206, accountInfo.message);
+    }
+
+    async testTransactionDetails() {
+        const details = await this.getTransactionDetails('0x1e331b4debcd9f012ff2a7b3e62ad62ad4bbf010feac5262e639cfe6820531ac');
+        console.log(211, details);
+        console.log(212, details.message);
+    }
+
+    async deserializeTransaction() {
+        const multiAgentRawTransaction = this.getDeserializedTransaction('AJxZR9I1/KivDtnJDcpQGWwRLaxAfrGdh9kofbk9fi1RswIAAAAAAAACWeh+alNFEiCl8VRqkp6QILHHV+iptuw6dmN94AX5s3EHcGF5ZXJfMzB0cmFuc2Zlcl93aXRoX2ZlZV9wYXllcl9tdWx0aXBsZV93aXRoX2NvbW1pc3Npb24BB+YMVEZ+TAlM7pUf3koBjOFQTzsPCe2G5sjZgRdxxrHwBGNvaW4BVAAGCAEAAAAAAAAAIQFGRI9AWzJUWCxM8cHWR3K3f5qzEB10+aoFeqW3rOOp3AkBgPD6AgAAAAAJAaAlJgAAAAAAAQAdHFRpcCA2NDdkN2Y4NWEwYWMxZWYyYzNkZTVkMTjQBwAAAAAAAGQAAAAAAAAAeI19ZAAAAAACAf20HK+yXQFHPDP2XXttl7jV5Nuw+kcBoZR26N62V1dW');
+        const [, receiversArg, amountArg, commissionArg, , memoArg] = multiAgentRawTransaction.raw_txn.payload.value.args;
+        console.log(179, multiAgentRawTransaction.secondary_signer_addresses[0].toHexString());
+        console.log(180, this.#getCoinTransferArgs(receiversArg, amountArg, commissionArg));
+        console.log(181, String.fromCharCode(...memoArg.slice(1)));
     }
 }
 
-// const solanaPractice = new SolanaPractice();
 const aptosPractice = new AptosPractice();
+const solanaPractice = new SolanaPractice();
 
-aptosPractice.deserializeCoinTransferTransaction();
+aptosPractice.deserializeTransaction();
+// solanaPractice.decodeTransaction();
