@@ -33,9 +33,9 @@ export default class Solana {
         );
     }
 
-    newTransaction(blockhash, lastValidBlockHeight) {
+    newTransaction(feePayer, blockhash, lastValidBlockHeight) {
         return new Transaction({ // Get New Transaction Object
-            feePayer: this.admin.publicKey, // The transaction fee payer
+            feePayer: new PublicKey(feePayer), // The transaction fee payer
             blockhash, // A recent blockhash
             lastValidBlockHeight // the last block chain can advance to before tx is exportd expired
         });
@@ -66,10 +66,10 @@ export default class Solana {
         );
     }
 
-    transferTokensInstruction(source, destination, owner, amount) {
+    createTransferInstruction(source, destination, owner, amount) {
         return createTransferInstruction( // Construct a Transfer instruction
-            source, // Source account
-            destination, // Destination account
+            new PublicKey(source), // Source account
+            new PublicKey(destination), // Destination account
             new PublicKey(owner), // Owner of the source account
             amount, // Number of tokens to transfer
             undefined, // Signing accounts if `owner` is a multisig

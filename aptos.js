@@ -118,7 +118,15 @@ export default class Aptos {
         return this.#chingariClient.getTransactionDetail(signature);
     }
 
-    getCoinActivities() {
-        return this.#chingariClient.getCoinActivities(this.#coinType, 1000);
+    getCoinActivities(offset, limit) {
+        return this.#chingariClient.getCoinActivities({
+            coinAddress: this.#coinType,
+            offset,
+            limit
+        });
+    }
+
+    getAccountActivities(accountAddress, offset, limit) {
+        return this.#chingariClient.getAccountActivities({ accountAddress, offset, limit });
     }
 }

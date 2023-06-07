@@ -59,6 +59,23 @@ class SolanaPractice extends Solana {
         const decodedTransaction = this.deserializeTransaction(rawTransaction);
         console.log(60, decodedTransaction);
     }
+
+    async testCrossChain() {
+        const instructions = [
+            this.createTransferInstruction(
+                '9X7sriRkfLTKxYgEirXT4hvMTw2yvwU521qu5vQYzbgq',
+                'AraYFQQ9hmRxsHin3NdBAk4yXcY4yjhHmN8X5W1P9nET',
+                '3FNUmN76hK2qsd3hohjcyWLgMFr9HWSBFEgkhiB8Pe8C',
+                190),
+            this.memoInstruction('Block-Chain-Practice Cross Chain Test')
+        ]
+        const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+        const transaction = this.newTransaction('3FNUmN76hK2qsd3hohjcyWLgMFr9HWSBFEgkhiB8Pe8C', blockhash, lastValidBlockHeight);
+        transaction.add(...instructions);
+        transaction.sign(this.admin);
+        const signature = await this.connection.sendRawTransaction(transaction.serialize());
+        console.log(77, signature);
+    }
 }
 
 class AptosPractice extends Aptos {
@@ -219,10 +236,20 @@ class AptosPractice extends Aptos {
         console.log(180, this.#getCoinTransferArgs(receiversArg, amountArg, commissionArg));
         console.log(181, String.fromCharCode(...memoArg.slice(1)));
     }
+
+    async test() {
+        const activities = await this.getAccountActivities('0x9c5947d235fca8af0ed9c90dca50196c112dac407eb19d87d9287db93d7e2d51', 1, 100);
+        console.log(225, activities[0]);
+    }
+
+    async testGetCoinActivities() {
+        const activities = await this.getCoinActivities(1, 101);
+        console.log(237, activities, activities.length);
+    }
 }
 
 const aptosPractice = new AptosPractice();
 const solanaPractice = new SolanaPractice();
 
-aptosPractice.deserializeTransaction();
-// solanaPractice.decodeTransaction();
+// aptosPractice.testGetCoinActivities();
+// solanaPractice.testCrossChain();
