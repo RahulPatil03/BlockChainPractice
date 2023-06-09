@@ -1,12 +1,24 @@
 import dotenv from 'dotenv';
-import Solana from './solana.js';
+import Fetch from 'node-fetch';
 import Aptos from './aptos.js';
+import Solana from './solana.js';
 
 dotenv.config();
 
-class SolanaPractice extends Solana {
+function fetch(url, method, Authorization, body) {
+    return Fetch(url, {
+        method,
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Authorization}`
+        },
+        body: JSON.stringify(body)
+    }).then(value => value.json());
+}
+
+class SolanaPractice {
     constructor() {
-        super();
+        this.solana = new Solana();
     }
 
     async #serializedTransactionGariTransfer(fromPubkey, toPubkey, amount, memo) {
@@ -61,36 +73,81 @@ class SolanaPractice extends Solana {
     }
 
     async testCrossChain() {
-        const instructions = [
-            this.createTransferInstruction(
-                '9X7sriRkfLTKxYgEirXT4hvMTw2yvwU521qu5vQYzbgq',
-                'AraYFQQ9hmRxsHin3NdBAk4yXcY4yjhHmN8X5W1P9nET',
-                '3FNUmN76hK2qsd3hohjcyWLgMFr9HWSBFEgkhiB8Pe8C',
-                190),
-            this.memoInstruction('Block-Chain-Practice Cross Chain Test')
-        ]
-        const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
-        const transaction = this.newTransaction('3FNUmN76hK2qsd3hohjcyWLgMFr9HWSBFEgkhiB8Pe8C', blockhash, lastValidBlockHeight);
-        transaction.add(...instructions);
-        transaction.sign(this.admin);
-        const signature = await this.connection.sendRawTransaction(transaction.serialize());
-        console.log(77, signature);
+        const user1 = this.solana.keypairFromSecretKey(process.env.solanaUserSecretKey);
+        const { data: { encodedTxn } } = await fetch('http://localhost:5000/wallet/getEncodedTransactionForTip', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.solanaUser1}`
+            },
+            body: JSON.stringify({ coins: 1000000000, publicKey: '0x37f2b3a1e2a47cf09fe9720b3a74a44e678c64dce55f21dd492ccb03be7558e1' })
+        }).then(value => value.json());
+
+        const transaction = this.solana.parseTransactionFrom(encodedTxn);
+        transaction.partialSign(user1);
+
+        const { data: { transactionSignature } } = await fetch('http://localhost:5000/wallet/sendToken', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.solanaUser1}`
+            },
+            body: JSON.stringify({ endocdeTransction: transaction.serialize().toString('base64'), transactionCase: 'tip' })
+        }).then(value => value.json());
+        console.log(86, transactionSignature);
+    }
+
+    async testWithdrawal() {
+        const user1 = this.solana.keypairFromSecretKey(process.env.solanaUserSecretKey);
+        const Authorization = 'eyJhbGciOiJIUzI1NiJ9.OGNjYzdlZmYzMjRhNTczNDEyMDY1YWU1OTlmNTQzNzY6NTIyMjk3ZDM5ZmM2ZTk1YzZjYjQzOWVkMWQ2ZDMzNjVlODBmNzMyYzY5Y2Y5YWRhOTVmNjY3NTZmODI5YWYyNmNjNGU0NTVlZDU0Njg2ODVmOGE5MjUzMDMyYzQ5MDc3Y2RlYjZmNzk4NjJiMDAyZDM3NjFkMjUzMDMxMWJiZjlhZDkwZGE3NDgwNmNmMmJhNGY0OTNkMTBhODY0MWYyMTkyMTEwMzRlMmQyNjcwZDNiYTQ1ODg4YWQ1YmI1YTg2NDY5MzdhOWM1YjYzNThhZjZkOGQyZjY0MGE0ZTgxZTI0NzAwOTJmZTgzN2ExZmQ2NWRiZGM1NTU0NmY1NmU2ZTIwNjA1M2FjNTc4OGIwMjQ5MzBkYTNmZDdhNzg2N2NiNzVmYTU3MzIyNWQ2MmYxMzJmMjM1ODE5NTc4YTBjMzQxNzRhMzU2ZWRhZjc4NzMxMzc2MjgxNmZkNTNkNzI3YTdhZWZhZjU3MmNiZTNmMjU5ODk3ZmY1OTZlYTMyNDViNmMyYmNkZDBjNzI3Mzc0ZWM4MThiNjVjNjNhYTE3N2NiZWNhYmMzNDM2YmJkNTUxNWE4N2UxZThkOTdmYTczMjQzMDc3M2ZjNjE5M2VlMzdkMWNmYTU4N2E4YTkxOWZhM2QzNDlhOTM4ODg3MjVmYTFlNjVlODRiNzJhYTY4MTA1MGNjODVjZjk0MDAwZjFhYjNiNGYzNzNlMTA1ZDg4MzEwN2U4MGJlZDljZWFiNjQ2MjZkYzU0YTQyYjRmMWE5NzEyNzEwY2E0MzE0NjFiZmY5Y2EzNmUyYTcxYWMxOGRhYzM3ZDFjMjVkOGIwMjBiNjI0Yjk1ZGI5ZjU5MjZjYWQxN2ZhOGQzZmNkN2Q3NTE3NDNhMGRkMzFiZjg3MDNi.wfh9A74yJFgA6-HUQ3eDRKa13cfbCg8zdAiMBZ7BRVg';
+
+        // const response1 = await fetch(
+        //     'http://localhost:5000/wallet/saveWithdawalTransaction',
+        //     'POST',
+        //     Authorization,
+        //     {
+        //         receiverPublicKey: '0x9c5947d235fca8af0ed9c90dca50196c112dac407eb19d87d9287db93d7e2d51',
+        //         coins: 20000000000,
+        //         chain: 'aptos'
+        //     }
+        // );
+        // console.log({ response1 });
+
+        const response2 = await fetch(
+            'http://localhost:5000/wallet/getEncodedTransaction',
+            'POST',
+            Authorization,
+            {
+                withDrawbleTransactionId: '1540b5d4-adbe-4dbb-997c-5cd8ea9a0d88'
+            }
+        )
+        console.log({ response2 });
+
+        const transaction = this.solana.parseTransactionFrom(response2.data.encodedTransaction);
+        transaction.partialSign(user1);
+
+        const response3 = await fetch(
+            'http://localhost:5000/wallet/sendTokenToExternal',
+            'POST',
+            Authorization,
+            {
+                encodedTransaction: transaction.serialize({ verifySignatures: false }).toString('base64')
+            }
+        );
+        console.log({ response3 });
     }
 }
 
-class AptosPractice extends Aptos {
-    #powersOf256 = [1, 256];
-
+class AptosPractice {
     constructor() {
-        super();
-        for (let i = 2; i < 8; i++) this.#powersOf256[i] = this.#powersOf256[i - 1] * 256;
+        this.aptos = new Aptos();
     }
 
-    #getNumberFromUint8Array(uint8Array) {
-        return uint8Array.reduce((previousValue, currentValue, currentIndex) => previousValue + currentValue * this.#powersOf256[currentIndex], 0);
+    getNumberFromUint8Array(uint8Array) {
+        return uint8Array.reduce((previousValue, currentValue, currentIndex) => previousValue + currentValue * this.aptos.powersOf256[currentIndex], 0);
     }
 
-    #getCoinTransferArgs(receiversArg, amountArg, commissionArg) {
+    getCoinTransferArgs(receiversArg, amountArg, commissionArg) {
         const args = [];
 
         let totalArgs = receiversArg[0];
@@ -103,8 +160,8 @@ class AptosPractice extends Aptos {
             const receiverStart = start * 4;
             args.push({
                 receiver: receiversArg.slice(receiverStart, receiverStart + 32).reduce((previousValue, currentValue) => previousValue + currentValue.toString(16).padStart(2, '0'), '0x'),
-                amount: this.#getNumberFromUint8Array(amountArg.slice(start, start + 8)),
-                commission: this.#getNumberFromUint8Array(commissionArg.slice(start, start + 8))
+                amount: this.getNumberFromUint8Array(amountArg.slice(start, start + 8)),
+                commission: this.getNumberFromUint8Array(commissionArg.slice(start, start + 8))
             });
         }
         return args;
@@ -182,7 +239,7 @@ class AptosPractice extends Aptos {
 
         const [tokenNameArg, priceArg, memoArg] = multiAgentRawTransaction.raw_txn.payload.value.args;
         const tokenName = String.fromCharCode(...tokenNameArg.slice(1));
-        const price = this.#getNumberFromUint8Array(priceArg);
+        const price = this.getNumberFromUint8Array(priceArg);
         const memo = String.fromCharCode(...memoArg.slice(1));
 
         console.log(119, { userAddress, tokenName, price, memo });
@@ -200,7 +257,7 @@ class AptosPractice extends Aptos {
         const multiAgentRawTransaction = this.getDeserializedTransaction(rawTxnBase64);
         const [, receiversArg, amountArg, commissionArg, , memoArg] = multiAgentRawTransaction.raw_txn.payload.value.args;
         console.log(179, multiAgentRawTransaction.secondary_signer_addresses[0].toHexString());
-        console.log(180, this.#getCoinTransferArgs(receiversArg, amountArg, commissionArg));
+        console.log(180, this.getCoinTransferArgs(receiversArg, amountArg, commissionArg));
         console.log(181, String.fromCharCode(...memoArg.slice(1)));
     }
 
@@ -230,10 +287,10 @@ class AptosPractice extends Aptos {
     }
 
     async deserializeTransaction() {
-        const multiAgentRawTransaction = this.getDeserializedTransaction('AJxZR9I1/KivDtnJDcpQGWwRLaxAfrGdh9kofbk9fi1RswIAAAAAAAACWeh+alNFEiCl8VRqkp6QILHHV+iptuw6dmN94AX5s3EHcGF5ZXJfMzB0cmFuc2Zlcl93aXRoX2ZlZV9wYXllcl9tdWx0aXBsZV93aXRoX2NvbW1pc3Npb24BB+YMVEZ+TAlM7pUf3koBjOFQTzsPCe2G5sjZgRdxxrHwBGNvaW4BVAAGCAEAAAAAAAAAIQFGRI9AWzJUWCxM8cHWR3K3f5qzEB10+aoFeqW3rOOp3AkBgPD6AgAAAAAJAaAlJgAAAAAAAQAdHFRpcCA2NDdkN2Y4NWEwYWMxZWYyYzNkZTVkMTjQBwAAAAAAAGQAAAAAAAAAeI19ZAAAAAACAf20HK+yXQFHPDP2XXttl7jV5Nuw+kcBoZR26N62V1dW');
+        const multiAgentRawTransaction = this.aptos.getDeserializedTransaction('AJxZR9I1/KivDtnJDcpQGWwRLaxAfrGdh9kofbk9fi1R5AIAAAAAAAACWeh+alNFEiCl8VRqkp6QILHHV+iptuw6dmN94AX5s3EHcGF5ZXJfMzB0cmFuc2Zlcl93aXRoX2ZlZV9wYXllcl9tdWx0aXBsZV93aXRoX2NvbW1pc3Npb24BB+YMVEZ+TAlM7pUf3koBjOFQTzsPCe2G5sjZgRdxxrHwBGNvaW4BVAAGCAIAAAAAAAAAQQKcWUfSNfyorw7ZyQ3KUBlsES2sQH6xnYfZKH25PX4tUYa8l1T96xHMyERIi9XB0OlHM1elkzwFr6+Vdu5MlCC7EQIUAAAAAAAAAAAAAAAAAAAAEQIAAAAAAAAAAAAAAAAAAAAAAQAREHsidHlwZSI6ImJvb3N0In0gTgAAAAAAAGQAAAAAAAAA0N+CZAAAAAACAVq/th5amtRWhGiQHrseIrbAEgwkkm9ymOaxoQ2W3ieu');
         const [, receiversArg, amountArg, commissionArg, , memoArg] = multiAgentRawTransaction.raw_txn.payload.value.args;
         console.log(179, multiAgentRawTransaction.secondary_signer_addresses[0].toHexString());
-        console.log(180, this.#getCoinTransferArgs(receiversArg, amountArg, commissionArg));
+        console.log(180, this.getCoinTransferArgs(receiversArg, amountArg, commissionArg));
         console.log(181, String.fromCharCode(...memoArg.slice(1)));
     }
 
@@ -246,10 +303,79 @@ class AptosPractice extends Aptos {
         const activities = await this.getCoinActivities(1, 101);
         console.log(237, activities, activities.length);
     }
+
+    async testCrossChain(rawTxnBase64) {
+        const user1 = this.aptos.getAddressFromPrivateKey(process.env.aptosUserPrivateKey);
+        const { data: { encodedTxn } } = await fetch('http://localhost:5000/wallet/getEncodedTransactionForTip', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.aptosUser1}`
+            },
+            body: JSON.stringify({ coins: 1000000000, publicKey: '2FeSUo4dxqiSJeH3zj2gMe2Mc4wehCYGn66Bx4tS6Cup' })
+        }).then(value => value.json());
+        const senderAuth = await this.aptos.getTransactionAuthenticationFromSigners(
+            encodedTxn,
+            user1,
+            process.env.aptosUserPrivateKey
+        )
+        const { data: { transactionSignature } } = await fetch('http://localhost:5000/wallet/sendToken', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.aptosUser1}`
+            },
+            body: JSON.stringify({ endocdeTransction: encodedTxn, transactionCase: 'tip', senderAuth })
+        }).then(value => value.json());
+        console.log(279, transactionSignature);
+    }
+
+    async testWithdrawal() {
+        const user1 = this.aptos.getAddressFromPrivateKey(process.env.aptosUserPrivateKey);
+        const Authorization = 'eyJhbGciOiJIUzI1NiJ9.YTlkMzVhNTc5MmVlMDk3ODk0NjA1YTc2YTZhYjg0NTg6NDBmZWVlNTNjMGQ2NDk5MzVjYzQ0MWRiNjVlZTlhY2Q1NjZlZTBjMTYwMmRkMjM1OTA3MmNiNDZlYjc4MWU1ZTRmYTAyYzI2MzViN2NiM2ZlOTBkNjQxMjA3ZDVjMmZjMmI4NWU2NzljZjU4Yjg4MWQ0MDJlOGI1M2Y5MDNiOWVlYmRhYTIyOGJmMmNlZGQ3ZmJmYWRiNjFkNzI1OTMyYzUyODIzYTUzZWQwYjNhYTE0Y2VhMDljNmIyZjZiOTk4MWVmMzFhNmY2NTdmZjIzYjBmZGUwNjZmYWNiMzVlYjYwMzU4MjljMmI3MjdmMzdmZGJlMGZkYTRhMGM3ZTJiMDdkYzc2NTQxY2M0YTMyODlhNzMyZTMzYjQzMDQ0OTI2ZWViMTM0YjNhODdhMmM2MTUyZDk4M2IyMDAzMTg0ZDgwZjM5OTFmNDg5ZDZlOTQ4YWM4Zjg5MzI5N2NhMTJlOTQ1MDcwMDJjZDNjN2YwZGQxN2YzNjRjZGM4MDc5MzkyMTA1YTA5NDliMzU5ZTUxZTNiOTg5YTQ3ZTA5MjFhZGExNzVjNmVlZWZkY2RiYjc2NTExYzQ2NzgyMDhkZWUzMGFmODMxZWQzM2ZjMjIyOGM3YjEzMGUwMTc1OGI0YmYyYmY0MDJjZGRiZjcxOTIxODMwN2UxZGM3NjBmMjUwNjRkZTIyZTE0OTk5MWZjNDZjZDk0MzQ2YmQxNzA2NGM4NWNkOGQ1ZTY4YjYyNWUwZWI5M2UwMDgwNjM5Nzg1Yzc2YzM4MWZiYTYzOTVlZTMzZDRhYTM0YTllZTU3NTk0ZTI3Y2Y2OGRiNTZjY2VmNjJmMzc2MjBjYmQ1NWY5NTY2MzFlMjY3MWJiMGYzZjhlMzNjMTk4YzJlNzYxYWU4MTRk.v5IuJRpjewnO5e8cj8bPcU022lnHaLSuRin4z--s2uI';
+
+        // const response1 = await fetch(
+        //     'http://localhost:5000/wallet/saveWithdawalTransaction',
+        //     'POST',
+        //     Authorization,
+        //     {
+        //         receiverPublicKey: '0x9c5947d235fca8af0ed9c90dca50196c112dac407eb19d87d9287db93d7e2d51',
+        //         coins: 20000000000,
+        //         chain: 'aptos'
+        //     }
+        // );
+        // console.log({ response1 });
+
+        const response2 = await fetch(
+            'http://localhost:5000/wallet/getEncodedTransaction',
+            'POST',
+            Authorization,
+            {
+                withDrawbleTransactionId: 'b77cd470-e8e5-4f8e-941c-ef6d652b555e'
+            }
+        )
+        console.log({ response2 });
+
+        const senderAuth = await this.aptos.getTransactionAuthenticationFromSigners(
+            response2.data.encodedTransaction,
+            user1,
+            process.env.aptosUserPrivateKey
+        )
+        const response3 = await fetch(
+            'http://localhost:5000/wallet/sendTokenToExternal',
+            'POST',
+            Authorization,
+            {
+                encodedTransaction: response2.data.encodedTransaction,
+                senderAuth
+            }
+        );
+        console.log({ response3 });
+    }
 }
 
 const aptosPractice = new AptosPractice();
 const solanaPractice = new SolanaPractice();
 
-// aptosPractice.testGetCoinActivities();
-// solanaPractice.testCrossChain();
+aptosPractice.deserializeTransaction();
+// solanaPractice.testWithdrawal();

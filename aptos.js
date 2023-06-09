@@ -4,18 +4,14 @@ const require = createRequire(import.meta.url);
 const { AptosChingari, AptosChingariTransactions, AptosChingariNFT, getAptosAccount, deserializeMultiAgentRawTransaction } = require('aptos');
 
 export default class Aptos {
-    #coinType;
-    #adminAddress;
-    #chingariClient;
-    #aptosChingariTransactions;
-    #aptosChingariNFT;
+    powersOf256 = [1, 256];
 
     constructor() {
-        this.#coinType = '0xe60c54467e4c094cee951fde4a018ce1504f3b0f09ed86e6c8d9811771c6b1f0::coin::T';
-        this.#adminAddress = this.getAddressFromPrivateKey(process.env.aptosAdminPrivateKey);
-        this.#chingariClient = new AptosChingari(process.env.aptosConnectionURL);
-        this.#aptosChingariTransactions = new AptosChingariTransactions();
-        this.#aptosChingariNFT = new AptosChingariNFT();
+        this.coinType = '0xe60c54467e4c094cee951fde4a018ce1504f3b0f09ed86e6c8d9811771c6b1f0::coin::T';
+        this.chingariClient = new AptosChingari(process.env.aptosConnectionURL);
+        this.aptosChingariTransactions = new AptosChingariTransactions();
+        this.aptosChingariNFT = new AptosChingariNFT();
+        for (let i = 2; i < 8; i++) this.powersOf256[i] = this.powersOf256[i - 1] * 256;
     }
 
     getAddressFromPrivateKey(privateKey) {
@@ -23,36 +19,36 @@ export default class Aptos {
     }
 
     getNewAccount() {
-        return this.#aptosChingariTransactions.createAndSendNewAccountTransaction({
-            chingariClient: this.#chingariClient,
+        return this.aptosChingariTransactions.createAndSendNewAccountTransaction({
+            chingariClient: this.chingariClient,
             senderPrivateKey: process.env.aptosAdminPrivateKey,
             simulation: true
         })
     }
 
     isUserRegistered(address) {
-        return this.#chingariClient.checkUserRegistered(address, this.#coinType);
+        return this.chingariClient.checkUserRegistered(address, this.coinType);
     }
 
     getTokenBalance(address) {
-        return this.#chingariClient.getTokenBalance(address, this.#coinType);
+        return this.chingariClient.getTokenBalance(address, this.coinType);
     }
 
     rawTransactionTokenRegistration(accountAddress) {
-        return this.#aptosChingariTransactions.registerTokenToAddress({
-            chingariClient: this.#chingariClient,
-            feePayer: this.#adminAddress,
-            coinType: this.#coinType,
+        return this.aptosChingariTransactions.registerTokenToAddress({
+            chingariClient: this.chingariClient,
+            feePayer: this.adminAddress,
+            coinType: this.coinType,
             accountAddress,
             memo: 'Block-Chain-Practice Gari Registration'
         });
     }
 
     rawTransactionCoinTransfer(from, to, amount, commission, memo) {
-        return this.#aptosChingariTransactions.rawTransactionCoinTransferMultiple({
-            chingariClient: this.#chingariClient,
-            feePayer: this.#adminAddress,
-            coinType: this.#coinType,
+        return this.aptosChingariTransactions.rawTransactionCoinTransferMultiple({
+            chingariClient: this.chingariClient,
+            feePayer: this.adminAddress,
+            coinType: this.coinType,
             from,
             to,
             amount,
@@ -64,10 +60,10 @@ export default class Aptos {
     }
 
     rawTransactionMintBadge(userAddress) {
-        return this.#aptosChingariNFT.mintBadge({
-            chingariClient: this.#chingariClient,
-            adminAddress: this.#adminAddress,
-            coinType: this.#coinType,
+        return this.aptosChingariNFT.mintBadge({
+            chingariClient: this.chingariClient,
+            adminAddress: this.adminAddress,
+            coinType: this.coinType,
             tokenName: 'Iron Creator',
             userAddress,
             price: 10000000,
@@ -76,10 +72,10 @@ export default class Aptos {
     }
 
     rawTransactionUpgradeBadge(userAddress) {
-        return this.#aptosChingariNFT.upgradeBadge({
-            chingariClient: this.#chingariClient,
-            adminAddress: this.#adminAddress,
-            coinType: this.#coinType,
+        return this.aptosChingariNFT.upgradeBadge({
+            chingariClient: this.chingariClient,
+            adminAddress: this.adminAddress,
+            coinType: this.coinType,
             oldBadgeName: 'Iron Creator',
             oldBadgePropertyVersion: 1,
             price: 10000000,
@@ -92,16 +88,16 @@ export default class Aptos {
         })
     }
 
-    getTransactionAuthentication(rawTransaction, senderAddress, signerPrivateKey = process.env.aptosAdminPrivateKey) {
-        return this.#aptosChingariTransactions.getTransactionAuthenticationFromSigners(
+    getTransactionAuthenticationFromSigners(rawTransaction, senderAddress, signerPrivateKey) {
+        return this.aptosChingariTransactions.getTransactionAuthenticationFromSigners(
             rawTransaction,
             [senderAddress],
             signerPrivateKey
         );
     }
 
-    submitMultiAgentTransaction(rawTx, payerAuth, senderAccount, senderAuth) {
-        return this.#chingariClient.createMultiAgentTXAndSubmit(
+    createMultiAgentTXAndSubmit(rawTx, payerAuth, senderAccount, senderAuth) {
+        return this.chingariClient.createMultiAgentTXAndSubmit(
             rawTx,
             payerAuth,
             senderAccount,
@@ -115,18 +111,18 @@ export default class Aptos {
     }
 
     getTransactionDetails(signature) {
-        return this.#chingariClient.getTransactionDetail(signature);
+        return this.chingariClient.getTransactionDetail(signature);
     }
 
     getCoinActivities(offset, limit) {
-        return this.#chingariClient.getCoinActivities({
-            coinAddress: this.#coinType,
+        return this.chingariClient.getCoinActivities({
+            coinAddress: this.coinType,
             offset,
             limit
         });
     }
 
     getAccountActivities(accountAddress, offset, limit) {
-        return this.#chingariClient.getAccountActivities({ accountAddress, offset, limit });
+        return this.chingariClient.getAccountActivities({ accountAddress, offset, limit });
     }
 }
